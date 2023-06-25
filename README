@@ -1,0 +1,65 @@
+=============================================TEMA1 PCOM=================================================
+student: Riza Melih 324CD
+
+Tema implementeaza toate cerintele enuntului.
+
+Executia programului se ramifica in functie de tipul pachetului primit, ipv4 sau ARP
+
+     -> In cazul primirii unui pachet de tip ipv4 verific daca acesta este 
+	destinat router-ului, caz in care pachetul este de tip ICMP request, routerul 
+	trebuind sa trimita un ICMP reply.
+	Altfel, este un pachet ipv4 ce trebuie redirectionat mai departe. Verific checksum-ul
+	iar in cazul in care este gresit dau drop la pachet. Apoi verific ttl-ul iar daca este
+	mai mic sau egal cu 1 router-ul trimite un pachet ICMP "time exceeded" inapoi catre sursa.
+	
+	Daca pachetul este corect se poate trimite mai departe.
+	Router-ul cauta in structura Trie interfata pe care trebuie trimis pachetul si in cazul
+	in care nu exista adresa mac a urmatorului hop stoacata in tabela 'arp', denumita de mine
+	'cacheTable', pachetul primit este stocat intr-o coada. Se formuleaza un ARP request catre
+	nodul urmator pentru a afla adresa MAC a acestuia.
+	In cazul in care adresa mac corespunzatoare ip-ului urmatorului salt exista in 'cacheTable',
+	pachetul se trimite mai departe fara a realiza un ARP request inutil.
+	
+
+     -> In cazul primirii unui pachet de tip ARP, acesta poate fi de 2 feluri:
+     	
+     		Cazul request (0x0001): I se care router-ului sa trimita inapoi datele sale (adresa sa MAC).
+     		Formuleaza structuruile pentru a fi trimis un ARP reply, adaugand adresa MAC.
+     		
+     		Cazul reply (0x0002): Se primeste ARP reply la ARP request-ul formulat anterior si parcurg
+     		coada de pachete formata in cadrul router-ului pentru a le directiona mai departe, 
+     		modificand sursa si destinatia din header-ul ethernet, avand acum disponibila adresa MAC
+     		a urmatorului hop. Adresa MAC primita impreuna cu ip-ul interfetei urmatorului hop
+     		este stocata in tabela de cache-uire pentru a putea fi refolosita ulterior fara a realiza un
+     		alt ARP request.   
+     		
+     		
+     		
+  	Structuri ajutatoare:
+  	
+  	'cacheTableEntry' : este structura in care stochez cuplul (ip_next_hop, MAC_next_hop) primite la
+  	ARP reply. Structura este reprezentata ca o lista simplu inlantuita, la care adaug informatie la
+  	final si realizez o cautare print-o iteratie dupa valoarea campului ip.
+  	
+  	
+  	
+  	'Trie' : este structura in care stochez intrarile din tabela de routare preluata din fisier.
+  	Are rolul de a facilita cautarea intrarii in tabela de routare. In loc sa realizez o iteratie
+  	cu complexitate O(n), realizez o cautare intr-o structura de tip arbore binar, rezultand
+  	O(logn). 
+  	Functia 'buildTree' primeste ca parametru fisierul din care citesc linie cu linie (fiecare linie
+  	reprezentand o intrare in tabelul de routare). Pentru fiecare intrare, aplic masca pe perfix
+  	si navigand bit cu bit de la cel mai semnificativ la cel mai putin semnificativ construiesc 
+  	'drumul' prin Trie corespunzator intrarii. Daca un bit este 0 merg pe ramura stanga, iar in caz 
+  	contrar merg pe ramura dreapta. Cand ajung cu bit-ul de verificare in afara mastii, ma opresc
+  	si stochez in cadrul nodului curent structura ce descrie o intrare in tabelul de routare.
+  	
+  	Functia 'getRouteTableEntry' : navigheaza prin Trie conform ip-ului primit ca paramentru pana
+  	ajunge la nodul ce contine structura intrare tabel routare. Functia intoarce structura
+  	route_table_entry, ce contine atributele pentru next hop.
+  	
+  	
+  	Functia 'ipToDecimal' : transforma un char* de forma ex: "123.123.123.123" reprezentand o
+  	adresa ip in valoarea ip-ului in decimal u_int32_t.
+  	
+  	
